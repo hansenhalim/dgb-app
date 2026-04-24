@@ -15,7 +15,7 @@ const FAKE_PERIPHERALS: RfidPeripheral[] = [
 ];
 
 const FAKE_UID = "A1B2C3D4";
-const FAKE_SECRET = "C0FFEE".repeat(170) + "ABCD"; // 1024 hex chars
+const FAKE_SECRET = "0".repeat(1024); // Blank card — triggers the new-visitor flow on home scan.
 
 export class MockRfidReader implements RfidReader {
   private status: RfidReaderStatus = {

@@ -35,4 +35,9 @@ export class MockSessionRepository implements SessionRepository {
     }
     this.currentGateId = gateId;
   }
+
+  async getRfidKey(_uid: string): Promise<string> {
+    await delay(150);
+    return "A".repeat(192);
+  }
 }

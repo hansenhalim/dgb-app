@@ -15,11 +15,13 @@ import { colors, fonts, radius } from "@/theme/tokens";
 
 import { GateSheet } from "./GateSheet";
 import { useHomeViewModel } from "./useHomeViewModel";
+import { useScanViewModel } from "./useScanViewModel";
 
 const LOW_BATTERY_THRESHOLD = 20;
 
 export default function HomeScreen() {
   const vm = useHomeViewModel();
+  const scan = useScanViewModel();
   const { session, logout } = useSession();
   const readerStatus = useReaderStatus();
   const [gateSheetOpen, setGateSheetOpen] = useState(false);
@@ -33,6 +35,21 @@ export default function HomeScreen() {
     await logout();
     router.replace("/login");
   }, [logout]);
+
+  const onScan = useCallback(async () => {
+    const result = await scan.submit();
+    if (result?.isEmpty) {
+      router.push("/capture-id");
+    }
+  }, [scan]);
+
+  const scanLabel = !scan.readerConnected
+    ? "Reader Tidak Terhubung"
+    : scan.phase === "scanning"
+      ? "Memindai Kartu…"
+      : scan.phase === "reading"
+        ? "Membaca Kartu…"
+        : "Scan Kartu RFID";
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
@@ -129,25 +146,28 @@ export default function HomeScreen() {
             </View>
           </View>
         ) : null}
+
+        {scan.error ? (
+          <View style={styles.banner}>
+            <WarningTriangle size={20} color={colors.red} />
+            <View style={styles.bannerBody}>
+              <Text style={styles.bannerTitle}>GAGAL SCAN</Text>
+              <Text style={styles.bannerText}>{scan.error}</Text>
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
 
       <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
         <Pressable
-          style={[
-            styles.scanButton,
-            readerStatus.state !== "connected" && styles.scanButtonDisabled,
-          ]}
-          disabled={readerStatus.state !== "connected"}
+          style={[styles.scanButton, !scan.canSubmit && styles.scanButtonDisabled]}
+          disabled={!scan.canSubmit}
+          onPress={onScan}
         >
           <Text
-            style={[
-              styles.scanText,
-              readerStatus.state !== "connected" && styles.scanTextDisabled,
-            ]}
+            style={[styles.scanText, !scan.canSubmit && styles.scanTextDisabled]}
           >
-            {readerStatus.state === "connected"
-              ? "Scan Kartu RFID"
-              : "Reader Tidak Terhubung"}
+            {scanLabel}
           </Text>
         </Pressable>
       </SafeAreaView>

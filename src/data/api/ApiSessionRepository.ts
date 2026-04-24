@@ -1,3 +1,4 @@
+import { loadSession } from "@/data/auth/sessionStore";
 import type { Gate } from "@/domain/entities";
 import type {
   DashboardSnapshot,
@@ -5,6 +6,8 @@ import type {
 } from "@/domain/ports";
 
 import { request, type ApiEnvelope } from "./httpClient";
+
+type RfidKeyResponse = { message: string; rfid_key: string };
 
 type ApiGate = {
   id: number;
@@ -37,5 +40,14 @@ export class ApiSessionRepository implements SessionRepository {
       method: "PUT",
       body: JSON.stringify({ gate_id: gateId }),
     });
+  }
+
+  async getRfidKey(uid: string): Promise<string> {
+    const session = await loadSession();
+    const res = await request<RfidKeyResponse>(
+      `/api/rfid-key?uid=${encodeURIComponent(uid)}`,
+      { token: session?.token ?? null },
+    );
+    return res.rfid_key;
   }
 }

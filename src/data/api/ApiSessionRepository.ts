@@ -1,0 +1,41 @@
+import type { Gate } from "@/domain/entities";
+import type {
+  DashboardSnapshot,
+  SessionRepository,
+} from "@/domain/ports";
+
+import { request, type ApiEnvelope } from "./httpClient";
+
+type ApiGate = {
+  id: number;
+  name: string;
+  current_quota: number;
+  is_available: boolean;
+};
+
+function toGate(g: ApiGate): Gate {
+  return {
+    id: g.id,
+    name: g.name,
+    currentQuota: g.current_quota,
+    isAvailable: g.is_available,
+  };
+}
+
+export class ApiSessionRepository implements SessionRepository {
+  getDashboard(): Promise<DashboardSnapshot> {
+    return request<DashboardSnapshot>("/session/dashboard");
+  }
+
+  async listGates(): Promise<Gate[]> {
+    const res = await request<ApiEnvelope<ApiGate[]>>("/gates");
+    return res.data.map(toGate);
+  }
+
+  async setGate(gateId: number): Promise<void> {
+    await request<void>("/session/gate", {
+      method: "PUT",
+      body: JSON.stringify({ gate_id: gateId }),
+    });
+  }
+}

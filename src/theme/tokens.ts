@@ -1,5 +1,3 @@
-import { Platform } from "react-native";
-
 export const colors = {
   bg: "#fafaf7",
   surface: "#ffffff",
@@ -21,14 +19,6 @@ export const radius = {
 };
 
 export const fonts = {
-  sans: Platform.select({
-    ios: "System",
-    android: "sans-serif",
-    default: "System",
-  }) as string,
-  mono: Platform.select({
-    ios: "Menlo",
-    android: "monospace",
-    default: "monospace",
-  }) as string,
+  sans: "System",
+  mono: "monospace",
 };

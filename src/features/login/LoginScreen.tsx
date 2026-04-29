@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
 import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AppStatusBar } from "@/components/AppStatusBar";
+import { AppStatusBar, type AppStatusBarHandle } from "@/components/AppStatusBar";
 import { useSession } from "@/config/session";
 import { colors, fonts, radius } from "@/theme/tokens";
 
@@ -19,6 +19,7 @@ import { useLoginViewModel } from "./useLoginViewModel";
 export default function LoginScreen() {
   const vm = useLoginViewModel();
   const { setSession } = useSession();
+  const statusBarRef = useRef<AppStatusBarHandle>(null);
 
   const onSubmit = useCallback(async () => {
     const session = await vm.submit();
@@ -28,21 +29,29 @@ export default function LoginScreen() {
     }
   }, [vm, setSession]);
 
-  const buttonLabel = !vm.readerConnected
-    ? "Reader Tidak Terhubung"
-    : vm.phase === "scanning"
+  const busy = vm.phase !== "idle";
+  const pinReady = vm.pin.length === 6;
+  const needsReader = pinReady && !vm.readerConnected;
+
+  const buttonLabel =
+    vm.phase === "scanning"
       ? "Memindai Kartu…"
       : vm.phase === "verifying"
         ? "Memverifikasi…"
-        : vm.pin.length < 6
+        : !pinReady
           ? "Masukkan PIN 6 Digit"
-          : "Scan Kartu RFID";
+          : !vm.readerConnected
+            ? "Pilih Reader"
+            : "Scan Kartu RFID";
 
-  const busy = vm.phase !== "idle";
+  const buttonEnabled = !busy && pinReady;
+  const onButtonPress = needsReader
+    ? () => statusBarRef.current?.openReaderSheet()
+    : onSubmit;
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <AppStatusBar />
+      <AppStatusBar ref={statusBarRef} />
 
       <KeyboardAwareScrollView style={styles.field}>
         <View style={styles.content}>
@@ -74,12 +83,12 @@ export default function LoginScreen() {
       <KeyboardStickyView offset={{ closed: 0, opened: 16 }}>
         <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
           <Pressable
-            style={[styles.cta, !vm.canSubmit && styles.ctaDisabled]}
-            disabled={!vm.canSubmit}
-            onPress={onSubmit}
+            style={[styles.cta, !buttonEnabled && styles.ctaDisabled]}
+            disabled={!buttonEnabled}
+            onPress={onButtonPress}
           >
             <Text
-              style={[styles.ctaText, !vm.canSubmit && styles.ctaTextDisabled]}
+              style={[styles.ctaText, !buttonEnabled && styles.ctaTextDisabled]}
             >
               {buttonLabel}
             </Text>

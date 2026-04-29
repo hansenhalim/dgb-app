@@ -1,5 +1,5 @@
 import Constants from "expo-constants";
-import { useCallback, useEffect, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useServices } from "@/config/container";
@@ -9,6 +9,10 @@ import { colors, fonts } from "@/theme/tokens";
 import { ReaderSheet } from "./ReaderSheet";
 
 const appVersion = Constants.expoConfig?.version ?? "";
+
+export type AppStatusBarHandle = {
+  openReaderSheet: () => void;
+};
 
 export function useReaderStatus(): RfidReaderStatus {
   const { rfid } = useServices();
@@ -20,13 +24,15 @@ export function useReaderStatus(): RfidReaderStatus {
   return status;
 }
 
-export function AppStatusBar() {
+export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
   const { rfid } = useServices();
   const [status, setStatus] = useState<RfidReaderStatus>(rfid.getStatus());
   const [pairedId, setPairedId] = useState<string | null>(
     rfid.getPairedPeripheralId(),
   );
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  useImperativeHandle(ref, () => ({ openReaderSheet: () => setSheetOpen(true) }), []);
 
   useEffect(() => {
     setStatus(rfid.getStatus());
@@ -95,7 +101,8 @@ export function AppStatusBar() {
       />
     </>
   );
-}
+});
+AppStatusBar.displayName = "AppStatusBar";
 
 const styles = StyleSheet.create({
   bar: {

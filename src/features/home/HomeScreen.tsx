@@ -1,9 +1,13 @@
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AppStatusBar, useReaderStatus } from "@/components/AppStatusBar";
+import {
+  AppStatusBar,
+  useReaderStatus,
+  type AppStatusBarHandle,
+} from "@/components/AppStatusBar";
 import {
   CaretDown,
   ChevronRight,
@@ -24,6 +28,7 @@ export default function HomeScreen() {
   const scan = useScanViewModel();
   const { session, logout } = useSession();
   const readerStatus = useReaderStatus();
+  const statusBarRef = useRef<AppStatusBarHandle>(null);
   const [gateSheetOpen, setGateSheetOpen] = useState(false);
 
   const lowBattery =
@@ -43,17 +48,24 @@ export default function HomeScreen() {
     }
   }, [scan]);
 
-  const scanLabel = !scan.readerConnected
-    ? "Reader Tidak Terhubung"
-    : scan.phase === "scanning"
+  const scanLabel =
+    scan.phase === "scanning"
       ? "Memindai Kartu…"
       : scan.phase === "reading"
         ? "Membaca Kartu…"
-        : "Scan Kartu RFID";
+        : !scan.readerConnected
+          ? "Pilih Reader"
+          : "Scan Kartu RFID";
+
+  const scanBusy = scan.phase !== "idle";
+  const scanButtonEnabled = !scanBusy;
+  const onScanButtonPress = !scan.readerConnected
+    ? () => statusBarRef.current?.openReaderSheet()
+    : onScan;
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <AppStatusBar />
+      <AppStatusBar ref={statusBarRef} />
 
       <View style={styles.phead}>
         <View style={styles.guardGroup}>
@@ -160,12 +172,12 @@ export default function HomeScreen() {
 
       <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
         <Pressable
-          style={[styles.scanButton, !scan.canSubmit && styles.scanButtonDisabled]}
-          disabled={!scan.canSubmit}
-          onPress={onScan}
+          style={[styles.scanButton, !scanButtonEnabled && styles.scanButtonDisabled]}
+          disabled={!scanButtonEnabled}
+          onPress={onScanButtonPress}
         >
           <Text
-            style={[styles.scanText, !scan.canSubmit && styles.scanTextDisabled]}
+            style={[styles.scanText, !scanButtonEnabled && styles.scanTextDisabled]}
           >
             {scanLabel}
           </Text>

@@ -56,25 +56,21 @@ export default {
       ],
       "expo-secure-store",
       "expo-image",
+      "react-native-ble-plx",
       [
         "expo-camera",
         {
-          cameraPermission:
-            "Izinkan $(PRODUCT_NAME) mengakses kamera untuk foto KTP/SIM.",
-          recordAudioAndroid: false,
+          barcodeScannerEnabled: true,
         },
       ],
       [
         "expo-build-properties",
         {
           android: {
-            compileSdkVersion: 36,
-            targetSdkVersion: 36,
-            buildToolsVersion: "36.0.0",
+            buildArchs: ["arm64-v8a"],
+            enableBundleCompression: true,
             enableMinifyInReleaseBuilds: true,
             enableShrinkResourcesInReleaseBuilds: true,
-            enableBundleCompression: true,
-            buildArchs: ["arm64-v8a"],
           },
         },
       ],

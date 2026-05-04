@@ -1,4 +1,5 @@
 import type {
+  DiscoverOptions,
   RfidPeripheral,
   RfidReader,
   RfidReaderStatus,
@@ -14,8 +15,32 @@ const FAKE_PERIPHERALS: RfidPeripheral[] = [
   { id: "DE:AD:BE:EF:00:03", name: "P3VC-RFID-03", rssi: -85 },
 ];
 
-const FAKE_UID = "A1B2C3D4";
+const FAKE_UID = "3098B0A0";
 const FAKE_SECRET = "0".repeat(1024); // Blank card — triggers the new-visitor flow on home scan.
+
+function abortError(): Error {
+  const e = new Error("Dibatalkan.");
+  e.name = "AbortError";
+  return e;
+}
+
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(abortError());
+      return;
+    }
+    const t = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(t);
+      reject(abortError());
+    };
+    signal?.addEventListener("abort", onAbort);
+  });
+}
 
 export class MockRfidReader implements RfidReader {
   private status: RfidReaderStatus = {
@@ -23,15 +48,28 @@ export class MockRfidReader implements RfidReader {
     batteryPercent: null,
   };
   private pairedId: string | null = null;
+  private pairedName: string | null = null;
   private statusListeners = new Set<RfidStatusListener>();
 
   getStatus(): RfidReaderStatus {
     return this.status;
   }
 
-  async discover(): Promise<RfidPeripheral[]> {
-    await new Promise((r) => setTimeout(r, 400));
-    return [...FAKE_PERIPHERALS];
+  async discover(options?: DiscoverOptions): Promise<RfidPeripheral[]> {
+    const signal = options?.signal;
+    const onUpdate = options?.onUpdate;
+    const found: RfidPeripheral[] = [];
+    try {
+      for (const p of FAKE_PERIPHERALS) {
+        await delay(300, signal);
+        found.push(p);
+        if (onUpdate) onUpdate([...found]);
+      }
+    } catch (e) {
+      if (signal?.aborted) return found;
+      throw e;
+    }
+    return found;
   }
 
   async pair(peripheralId: string): Promise<void> {
@@ -40,6 +78,7 @@ export class MockRfidReader implements RfidReader {
       throw new Error(`Unknown peripheral: ${peripheralId}`);
     }
     this.pairedId = peripheralId;
+    this.pairedName = found.name;
     await this.connect();
   }
 
@@ -47,9 +86,14 @@ export class MockRfidReader implements RfidReader {
     return this.pairedId;
   }
 
+  getPairedPeripheralName(): string | null {
+    return this.pairedName;
+  }
+
   async forget(): Promise<void> {
     await this.disconnect();
     this.pairedId = null;
+    this.pairedName = null;
   }
 
   async connect(): Promise<void> {
@@ -72,11 +116,15 @@ export class MockRfidReader implements RfidReader {
     };
   }
 
-  async scanCard(): Promise<ScannedCard> {
+  async readConnectedRssi(): Promise<number | null> {
+    return null;
+  }
+
+  async scanCard(signal?: AbortSignal): Promise<ScannedCard> {
     if (this.status.state !== "connected") {
       throw new Error("Reader tidak terhubung.");
     }
-    await new Promise((r) => setTimeout(r, 600));
+    await delay(600, signal);
     return {
       uid: FAKE_UID,
       async readSecret(_key: string): Promise<string> {

@@ -3,7 +3,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } fro
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useServices } from "@/config/container";
-import type { RfidReaderStatus } from "@/domain/ports";
+import type { DiscoverOptions, RfidReaderStatus } from "@/domain/ports";
 import { colors, fonts } from "@/theme/tokens";
 
 import { ReaderSheet } from "./ReaderSheet";
@@ -30,6 +30,9 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
   const [pairedId, setPairedId] = useState<string | null>(
     rfid.getPairedPeripheralId(),
   );
+  const [pairedName, setPairedName] = useState<string | null>(
+    rfid.getPairedPeripheralName(),
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useImperativeHandle(ref, () => ({ openReaderSheet: () => setSheetOpen(true) }), []);
@@ -37,15 +40,29 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
   useEffect(() => {
     setStatus(rfid.getStatus());
     setPairedId(rfid.getPairedPeripheralId());
-    return rfid.onStatusChange(setStatus);
+    setPairedName(rfid.getPairedPeripheralName());
+    return rfid.onStatusChange((s) => {
+      setStatus(s);
+      setPairedId(rfid.getPairedPeripheralId());
+      setPairedName(rfid.getPairedPeripheralName());
+    });
   }, [rfid]);
 
-  const discover = useCallback(() => rfid.discover(), [rfid]);
+  const discover = useCallback(
+    (options?: DiscoverOptions) => rfid.discover(options),
+    [rfid],
+  );
+
+  const readConnectedRssi = useCallback(
+    () => rfid.readConnectedRssi(),
+    [rfid],
+  );
 
   const pair = useCallback(
     async (id: string) => {
       await rfid.pair(id);
       setPairedId(rfid.getPairedPeripheralId());
+      setPairedName(rfid.getPairedPeripheralName());
     },
     [rfid],
   );
@@ -57,6 +74,7 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
   const forget = useCallback(async () => {
     await rfid.forget();
     setPairedId(null);
+    setPairedName(null);
   }, [rfid]);
 
   const connected = status.state === "connected";
@@ -92,9 +110,11 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
         pairedReaderId={pairedId}
+        pairedReaderName={pairedName}
         readerState={status.state}
         readerBatteryPercent={status.batteryPercent}
         discoverReaders={discover}
+        readConnectedRssi={readConnectedRssi}
         pairReader={pair}
         reconnectReader={reconnect}
         forgetReader={forget}

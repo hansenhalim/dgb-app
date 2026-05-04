@@ -32,6 +32,7 @@ export default function LoginScreen() {
   const busy = vm.phase !== "idle";
   const pinReady = vm.pin.length === 6;
   const needsReader = pinReady && !vm.readerConnected;
+  const cancellable = vm.phase === "scanning" && vm.canCancel;
 
   const buttonLabel =
     vm.phase === "scanning"
@@ -91,6 +92,14 @@ export default function LoginScreen() {
               style={[styles.ctaText, !buttonEnabled && styles.ctaTextDisabled]}
             >
               {buttonLabel}
+              {cancellable ? (
+                <>
+                  {"  "}
+                  <Text style={styles.ctaCancelInline} onPress={vm.cancel}>
+                    Batalkan
+                  </Text>
+                </>
+              ) : null}
             </Text>
           </Pressable>
         </SafeAreaView>
@@ -184,5 +193,9 @@ const styles = StyleSheet.create({
   },
   ctaTextDisabled: {
     color: colors.inkMuted,
+  },
+  ctaCancelInline: {
+    color: colors.red,
+    textDecorationLine: "underline",
   },
 });

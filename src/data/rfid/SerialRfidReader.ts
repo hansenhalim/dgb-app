@@ -1,4 +1,5 @@
 import type {
+  DiscoverOptions,
   RfidPeripheral,
   RfidReader,
   RfidReaderStatus,
@@ -15,7 +16,7 @@ export class SerialRfidReader implements RfidReader {
     return { state: "disconnected", batteryPercent: null };
   }
 
-  async discover(): Promise<RfidPeripheral[]> {
+  async discover(_options?: DiscoverOptions): Promise<RfidPeripheral[]> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
@@ -24,6 +25,10 @@ export class SerialRfidReader implements RfidReader {
   }
 
   getPairedPeripheralId(): string | null {
+    return null;
+  }
+
+  getPairedPeripheralName(): string | null {
     return null;
   }
 
@@ -39,7 +44,11 @@ export class SerialRfidReader implements RfidReader {
     return () => {};
   }
 
-  async scanCard(): Promise<ScannedCard> {
+  async readConnectedRssi(): Promise<number | null> {
+    return null;
+  }
+
+  async scanCard(_signal?: AbortSignal): Promise<ScannedCard> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }

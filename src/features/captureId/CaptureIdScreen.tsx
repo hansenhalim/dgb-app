@@ -85,6 +85,7 @@ export default function CaptureIdScreen() {
 
       <View style={styles.cameraWrap}>
         <CameraView
+          animateShutter={false}
           ref={cameraRef}
           style={styles.camera}
           facing="back"

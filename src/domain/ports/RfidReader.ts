@@ -28,17 +28,30 @@ export type ScannedCard = {
   readSecret(key: string): Promise<string>;
 };
 
+export type DiscoverOptions = {
+  /** Abort the scan early. The promise still resolves with whatever was found so far. */
+  signal?: AbortSignal;
+  /** Fires on each new peripheral with the cumulative deduped list. Useful for live UI. */
+  onUpdate?: (peripherals: RfidPeripheral[]) => void;
+};
+
 export interface RfidReader {
   getStatus(): RfidReaderStatus;
 
-  /** Scan for nearby readers. BLE: live scan. Serial: the plugged device. */
-  discover(): Promise<RfidPeripheral[]>;
+  /** Scan for nearby readers. BLE: live scan over a short window. Serial: the plugged device. */
+  discover(options?: DiscoverOptions): Promise<RfidPeripheral[]>;
 
   /** Save the chosen peripheral as the single paired reader and connect. */
   pair(peripheralId: string): Promise<void>;
 
   /** Currently-paired peripheral ID, or null if none. */
   getPairedPeripheralId(): string | null;
+
+  /**
+   * Cached friendly name of the currently-paired peripheral, or null if none / not yet known.
+   * On BLE the name is captured on first successful connect and persisted alongside the ID.
+   */
+  getPairedPeripheralName(): string | null;
 
   /** Clear the paired peripheral (and disconnect). */
   forget(): Promise<void>;
@@ -49,6 +62,9 @@ export interface RfidReader {
 
   onStatusChange(listener: RfidStatusListener): () => void;
 
+  /** Live RSSI of the currently-connected peripheral (BLE only); null on other transports or when disconnected. */
+  readConnectedRssi(): Promise<number | null>;
+
   /** Wait for a card to be presented, then return its UID + a reader for its secret blocks. */
-  scanCard(): Promise<ScannedCard>;
+  scanCard(signal?: AbortSignal): Promise<ScannedCard>;
 }

@@ -14,16 +14,18 @@ import {
   View,
 } from "react-native";
 
-import type { RfidPeripheral } from "@/domain/ports";
+import type { DiscoverOptions, RfidPeripheral } from "@/domain/ports";
 import { colors, fonts, radius } from "@/theme/tokens";
 
 export type ReaderSheetProps = {
   visible: boolean;
   onClose: () => void;
   pairedReaderId: string | null;
+  pairedReaderName: string | null;
   readerState: "disconnected" | "connecting" | "connected";
   readerBatteryPercent: number | null;
-  discoverReaders: () => Promise<RfidPeripheral[]>;
+  discoverReaders: (options?: DiscoverOptions) => Promise<RfidPeripheral[]>;
+  readConnectedRssi: () => Promise<number | null>;
   pairReader: (peripheralId: string) => Promise<void>;
   reconnectReader: () => Promise<void>;
   forgetReader: () => Promise<void>;
@@ -39,9 +41,11 @@ export function ReaderSheet({
   visible,
   onClose,
   pairedReaderId,
+  pairedReaderName,
   readerState,
   readerBatteryPercent,
   discoverReaders,
+  readConnectedRssi,
   pairReader,
   reconnectReader,
   forgetReader,
@@ -56,6 +60,7 @@ export function ReaderSheet({
   const [pairedDetail, setPairedDetail] = useState<RfidPeripheral | null>(null);
   const [detailScanning, setDetailScanning] = useState(false);
   const sheetRef = useRef<ModalBottomSheetRef>(null);
+  const scanAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!visible) return;
@@ -64,21 +69,44 @@ export function ReaderSheet({
   }, [visible, pairedReaderId]);
 
   const runScan = useCallback(async () => {
+    scanAbortRef.current?.abort();
+
     setScanning(true);
     setError(null);
+    setPeripherals([]);
+
+    const abort = new AbortController();
+    scanAbortRef.current = abort;
+
     try {
-      setPeripherals(await discoverReaders());
+      await discoverReaders({
+        signal: abort.signal,
+        onUpdate: (list) => {
+          if (abort.signal.aborted) return;
+          setPeripherals(list);
+        },
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal memindai reader");
+      if (!abort.signal.aborted) {
+        setError(e instanceof Error ? e.message : "Gagal memindai reader");
+      }
     } finally {
+      if (scanAbortRef.current === abort) scanAbortRef.current = null;
       setScanning(false);
     }
   }, [discoverReaders]);
+
+  const stopScan = useCallback(() => {
+    scanAbortRef.current?.abort();
+  }, []);
 
   useEffect(() => {
     if (visible && mode === "picker") {
       runScan();
     }
+    return () => {
+      scanAbortRef.current?.abort();
+    };
   }, [visible, mode, runScan]);
 
   useEffect(() => {
@@ -88,23 +116,44 @@ export function ReaderSheet({
     }
     let cancelled = false;
     setDetailScanning(true);
-    discoverReaders()
-      .then((list) => {
-        if (cancelled) return;
-        setPairedDetail(list.find((p) => p.id === pairedReaderId) ?? null);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setPairedDetail(null);
+
+    const fetch = async (): Promise<RfidPeripheral | null> => {
+      if (readerState === "connected") {
+        const rssi = await readConnectedRssi();
+        return {
+          id: pairedReaderId,
+          name: pairedReaderName ?? "Reader",
+          rssi,
+        };
+      }
+      try {
+        const list = await discoverReaders();
+        return list.find((p) => p.id === pairedReaderId) ?? null;
+      } catch {
+        return null;
+      }
+    };
+
+    fetch()
+      .then((detail) => {
+        if (!cancelled) setPairedDetail(detail);
       })
       .finally(() => {
-        if (cancelled) return;
-        setDetailScanning(false);
+        if (!cancelled) setDetailScanning(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [visible, mode, pairedReaderId, discoverReaders]);
+  }, [
+    visible,
+    mode,
+    pairedReaderId,
+    pairedReaderName,
+    readerState,
+    discoverReaders,
+    readConnectedRssi,
+  ]);
 
   const dismiss = useCallback(async () => {
     await sheetRef.current?.hide();
@@ -167,7 +216,7 @@ export function ReaderSheet({
               {mode === "paired" && pairedReaderId ? (
                 <View style={styles.pairedBody}>
                   <Text style={styles.pairedName}>
-                    {pairedDetail?.name ?? "Reader"}
+                    {pairedDetail?.name ?? pairedReaderName ?? "Reader"}
                   </Text>
                   <Text style={styles.pairedId}>{pairedReaderId}</Text>
 
@@ -232,16 +281,7 @@ export function ReaderSheet({
                 </View>
               ) : (
                 <View style={styles.pickerBody}>
-                  {scanning ? (
-                    <View style={styles.scanRow}>
-                      <ActivityIndicator color={colors.inkMuted} />
-                      <Text style={styles.scanText}>Mencari reader…</Text>
-                    </View>
-                  ) : peripherals.length === 0 ? (
-                    <Text style={styles.emptyText}>
-                      Tidak ada reader ditemukan.
-                    </Text>
-                  ) : (
+                  {peripherals.length > 0 ? (
                     peripherals.map((p) => (
                       <Pressable
                         key={p.id}
@@ -261,15 +301,24 @@ export function ReaderSheet({
                         </Text>
                       </Pressable>
                     ))
+                  ) : scanning ? (
+                    <View style={styles.scanRow}>
+                      <ActivityIndicator color={colors.inkMuted} />
+                      <Text style={styles.scanText}>Mencari reader…</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.emptyText}>
+                      Tidak ada reader ditemukan.
+                    </Text>
                   )}
 
                   <Pressable
                     style={styles.secondaryBtn}
-                    disabled={scanning || !!busyId}
-                    onPress={runScan}
+                    disabled={!!busyId}
+                    onPress={scanning ? stopScan : runScan}
                   >
                     <Text style={styles.secondaryBtnText}>
-                      {scanning ? "Memindai…" : "Pindai Ulang"}
+                      {scanning ? "Stop" : "Pindai Ulang"}
                     </Text>
                   </Pressable>
                 </View>

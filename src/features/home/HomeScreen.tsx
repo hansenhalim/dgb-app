@@ -48,6 +48,7 @@ export default function HomeScreen() {
     }
   }, [scan]);
 
+  const cancellable = scan.phase === "scanning" && scan.canCancel;
   const scanLabel =
     scan.phase === "scanning"
       ? "Memindai Kartu…"
@@ -180,6 +181,17 @@ export default function HomeScreen() {
             style={[styles.scanText, !scanButtonEnabled && styles.scanTextDisabled]}
           >
             {scanLabel}
+            {cancellable ? (
+              <>
+                {"  "}
+                <Text
+                  style={styles.scanCancelInline}
+                  onPress={scan.cancel}
+                >
+                  Batalkan
+                </Text>
+              </>
+            ) : null}
           </Text>
         </Pressable>
       </SafeAreaView>
@@ -378,5 +390,9 @@ const styles = StyleSheet.create({
   },
   scanTextDisabled: {
     color: colors.inkMuted,
+  },
+  scanCancelInline: {
+    color: colors.red,
+    textDecorationLine: "underline",
   },
 });

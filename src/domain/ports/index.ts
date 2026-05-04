@@ -5,6 +5,7 @@ export type {
   SessionRepository,
 } from "./SessionRepository";
 export type {
+  DiscoverOptions,
   RfidPeripheral,
   RfidReader,
   RfidReaderState,

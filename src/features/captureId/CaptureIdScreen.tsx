@@ -46,7 +46,7 @@ export default function CaptureIdScreen() {
           <Text style={styles.brandKey}>IZIN KAMERA</Text>
           <Text style={styles.title}>Kamera diperlukan</Text>
           <Text style={styles.subtitle}>
-            Izinkan akses kamera untuk foto KTP/SIM.
+            Izinkan akses kamera untuk foto kartu identitas.
           </Text>
         </View>
         <View style={styles.permissionActions}>
@@ -76,7 +76,7 @@ export default function CaptureIdScreen() {
             <Text style={styles.backText}>Batal</Text>
           </Pressable>
           <View style={styles.headerCenter}>
-            <Text style={styles.brandKeyLight}>PINDAI KTP/SIM</Text>
+            <Text style={styles.brandKeyLight}>KARTU IDENTITAS</Text>
             <Text style={styles.titleLight}>Posisikan KTP/SIM di dalam bingkai</Text>
           </View>
           <View style={styles.backButton} />
@@ -85,11 +85,10 @@ export default function CaptureIdScreen() {
 
       <View style={styles.cameraWrap}>
         <CameraView
-          animateShutter={false}
           ref={cameraRef}
           style={styles.camera}
           facing="back"
-          ratio="4:3"
+          pictureSize="640x480"
           onCameraReady={() => setCameraReady(true)}
         />
       </View>

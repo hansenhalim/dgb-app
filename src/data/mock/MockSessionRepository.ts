@@ -3,6 +3,8 @@ import type { DashboardSnapshot, SessionRepository } from "@/domain/ports";
 
 import { delay } from "./latency";
 
+const RFID_KEY = "C0FFEE".repeat(32);
+
 const gates: Gate[] = [
   { id: 1, name: "Gerbang 1", currentQuota: 55, isAvailable: true },
   { id: 2, name: "Gerbang 2", currentQuota: 45, isAvailable: true },
@@ -38,6 +40,6 @@ export class MockSessionRepository implements SessionRepository {
 
   async getRfidKey(_uid: string): Promise<string> {
     await delay(150);
-    return "A".repeat(192);
+    return RFID_KEY;
   }
 }

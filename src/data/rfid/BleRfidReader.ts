@@ -22,7 +22,7 @@ const NUS_TX_CHAR_UUID = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
 const PAIRED_ID_KEY = "rfid.pairedPeripheralId";
 const PAIRED_NAME_KEY = "rfid.pairedPeripheralName";
 
-const DISCOVER_WINDOW_MS = 3000;
+const DISCOVER_WINDOW_MS = 30000;
 const SCAN_TIMEOUT_MS = 15000;
 const READ_TIMEOUT_MS = 10000;
 const SCAN_POLL_INTERVAL_MS = 250;

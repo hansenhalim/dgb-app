@@ -31,14 +31,25 @@ const KEPERLUAN_OPTIONS: Keperluan[] = [
   "Lainnya",
 ];
 
+const formatPlate = (raw: string) =>
+  raw
+    .replace(/\s+/g, "")
+    .toUpperCase()
+    .replace(/([A-Z])(\d)/g, "$1 $2")
+    .replace(/(\d)([A-Z])/g, "$1 $2");
+
 export default function GuestFormScreen() {
   const draft = getDraft();
   const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
+  const isTablet = width >= 640;
 
   const [nik, setNik] = useState(draft?.nik ?? "");
   const [nama, setNama] = useState(draft?.nama ?? "");
   const [plat, setPlat] = useState(draft?.plat ?? "");
+  const handlePlatChange = useCallback(
+    (v: string) => setPlat(formatPlate(v)),
+    [],
+  );
   const [tujuan, setTujuan] = useState(draft?.tujuan ?? "");
   const [keperluan, setKeperluan] = useState<Keperluan | null>(
     draft?.keperluan ?? null,
@@ -113,7 +124,7 @@ export default function GuestFormScreen() {
                   contentFit="cover"
                 />
                 <View style={styles.photoMeta}>
-                  <Text style={styles.metaKey}>FOTO KTP</Text>
+                  <Text style={styles.metaKey}>FOTO KARTU IDENTITAS</Text>
                   <Pressable onPress={() => router.back()} hitSlop={8}>
                     <Text style={styles.metaAction}>Ambil Ulang</Text>
                   </Pressable>
@@ -131,7 +142,8 @@ export default function GuestFormScreen() {
                 onChangeText={(t) => setNik(t.replace(/\D/g, "").slice(0, 16))}
                 keyboardType="number-pad"
                 maxLength={16}
-                placeholder="16 digit NIK"
+                autoCorrect={false}
+                placeholder="1234567890123456"
                 placeholderTextColor={colors.inkDim}
               />
             </View>
@@ -142,8 +154,8 @@ export default function GuestFormScreen() {
                 style={styles.input}
                 value={nama}
                 onChangeText={setNama}
-                autoCapitalize="words"
-                placeholder="Nama lengkap tamu"
+                autoCorrect={false}
+                placeholder="JOHN DOE"
                 placeholderTextColor={colors.inkDim}
               />
             </View>
@@ -153,10 +165,10 @@ export default function GuestFormScreen() {
               <TextInput
                 style={styles.input}
                 value={plat}
-                onChangeText={(t) => setPlat(t.toUpperCase())}
-                autoCapitalize="characters"
+                onChangeText={handlePlatChange}
+                keyboardType="visible-password"
                 autoCorrect={false}
-                placeholder="Contoh: B 1234 XYZ"
+                placeholder="BE 1234 CD"
                 placeholderTextColor={colors.inkDim}
               />
             </View>
@@ -167,7 +179,8 @@ export default function GuestFormScreen() {
                 style={styles.input}
                 value={tujuan}
                 onChangeText={setTujuan}
-                placeholder="Blok / unit / nama pemilik"
+                autoCorrect={false}
+                placeholder="AA-1"
                 placeholderTextColor={colors.inkDim}
               />
             </View>
@@ -204,7 +217,8 @@ export default function GuestFormScreen() {
                   style={[styles.input, styles.otherInput]}
                   value={keperluanOther}
                   onChangeText={setKeperluanOther}
-                  placeholder="Tulis keperluan lainnya…"
+                  autoCorrect={false}
+                  placeholder="Renang, Les, dll"
                   placeholderTextColor={colors.inkDim}
                   autoFocus
                 />
@@ -256,7 +270,7 @@ const styles = StyleSheet.create({
     maxWidth: 960,
   },
   column: {
-    gap: 20,
+    gap: 10,
   },
   columnLeft: {
     flex: 1,
@@ -288,13 +302,13 @@ const styles = StyleSheet.create({
     borderColor: colors.rule,
     borderRadius: radius.base,
     overflow: "hidden",
-    maxWidth: 480,
+    maxWidth: 320,
     alignSelf: "center",
     width: "100%",
   },
   photo: {
     width: "100%",
-    aspectRatio: 1.585,
+    aspectRatio: 4 / 3,
     backgroundColor: colors.rule,
   },
   photoMeta: {
@@ -327,6 +341,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
   input: {
+    textTransform: "uppercase",
     fontSize: 16,
     color: colors.ink,
     backgroundColor: colors.surface,

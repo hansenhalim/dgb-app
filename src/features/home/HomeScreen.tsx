@@ -47,25 +47,17 @@ export default function HomeScreen() {
   const onScan = useCallback(async () => {
     const result = await scan.submit();
     if (result?.isEmpty) {
-      router.push("/capture-id");
+      router.push({
+        pathname: "/capture-id",
+        params: { uid: result.uid, rfidKey: result.rfidKey },
+      });
     }
   }, [scan]);
 
-  const cancellable = scan.phase === "scanning" && scan.canCancel;
-  const scanLabel =
-    scan.phase === "scanning"
-      ? "Memindai Kartu…"
-      : scan.phase === "reading"
-        ? "Membaca Kartu…"
-        : !scan.readerConnected
-          ? "Pilih Reader"
-          : "Scan Kartu RFID";
-
-  const scanBusy = scan.phase !== "idle";
-  const scanButtonEnabled = !scanBusy;
-  const onScanButtonPress = !scan.readerConnected
-    ? () => statusBarRef.current?.openReaderSheet()
-    : onScan;
+  const onScanButtonPress =
+    scan.cta.intent === "openReader"
+      ? () => statusBarRef.current?.openReaderSheet()
+      : onScan;
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
@@ -176,15 +168,15 @@ export default function HomeScreen() {
 
       <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
         <Pressable
-          style={[styles.scanButton, !scanButtonEnabled && styles.scanButtonDisabled]}
-          disabled={!scanButtonEnabled}
+          style={[styles.scanButton, !scan.cta.enabled && styles.scanButtonDisabled]}
+          disabled={!scan.cta.enabled}
           onPress={onScanButtonPress}
         >
           <Text
-            style={[styles.scanText, !scanButtonEnabled && styles.scanTextDisabled]}
+            style={[styles.scanText, !scan.cta.enabled && styles.scanTextDisabled]}
           >
-            {scanLabel}
-            {cancellable ? (
+            {scan.cta.label}
+            {scan.cta.canCancel ? (
               <>
                 {"  "}
                 <Text

@@ -1,4 +1,4 @@
-import type { Gate } from "@/domain/entities";
+import type { Destination, Gate } from "@/domain/entities";
 import type { DashboardSnapshot, SessionRepository } from "@/domain/ports";
 
 import { delay } from "./latency";
@@ -10,6 +10,19 @@ const gates: Gate[] = [
   { id: 2, name: "Gerbang 2", currentQuota: 45, isAvailable: true },
   { id: 3, name: "Gerbang 3", currentQuota: 55, isAvailable: true },
   { id: 4, name: "Gerbang 4", currentQuota: 0, isAvailable: false },
+];
+
+const destinations: Destination[] = [
+  { name: "AA-1", position: "villa1" },
+  { name: "AA-2", position: "villa2" },
+  { name: "AA-3", position: "exclusive" },
+  { name: "AB-1", position: "villa1" },
+  { name: "AB-2", position: "villa2" },
+  { name: "BA-1", position: "villa1" },
+  { name: "BA-2", position: "villa2" },
+  { name: "CA-1", position: "exclusive" },
+  { name: "CB-1", position: "villa1" },
+  { name: "CB-2", position: "villa2" },
 ];
 
 export class MockSessionRepository implements SessionRepository {
@@ -41,5 +54,10 @@ export class MockSessionRepository implements SessionRepository {
   async getRfidKey(_uid: string): Promise<string> {
     await delay(150);
     return RFID_KEY;
+  }
+
+  async listDestinations(): Promise<Destination[]> {
+    await delay(120);
+    return [...destinations];
   }
 }

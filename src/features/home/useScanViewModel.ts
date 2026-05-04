@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useServices } from "@/config/container";
 import type { RfidReaderStatus } from "@/domain/ports";
-import { startDraft } from "@/features/visit/visitDraft";
 
 export type ScanPhase = "idle" | "scanning" | "reading";
 
@@ -13,12 +12,21 @@ export type ScanResult = {
   isEmpty: boolean;
 };
 
+export type ScanCtaIntent = "scan" | "openReader";
+
+export type ScanCta = {
+  label: string;
+  enabled: boolean;
+  canCancel: boolean;
+  intent: ScanCtaIntent;
+};
+
 export type ScanViewModel = {
   readerConnected: boolean;
   phase: ScanPhase;
   error: string | null;
-  canSubmit: boolean;
   canCancel: boolean;
+  cta: ScanCta;
   cancel: () => void;
   submit: () => Promise<ScanResult | null>;
 };
@@ -47,6 +55,35 @@ export function useScanViewModel(): ScanViewModel {
   const readerConnected = status.state === "connected";
   const canSubmit = readerConnected && phase === "idle";
 
+  const cta: ScanCta =
+    !readerConnected
+      ? {
+          label: "Pilih Reader",
+          enabled: true,
+          canCancel: false,
+          intent: "openReader",
+        }
+      : phase === "scanning"
+        ? {
+            label: "Memindai Kartu…",
+            enabled: false,
+            canCancel,
+            intent: "scan",
+          }
+        : phase === "reading"
+          ? {
+              label: "Membaca Kartu…",
+              enabled: false,
+              canCancel: false,
+              intent: "scan",
+            }
+          : {
+              label: "Scan Kartu RFID",
+              enabled: true,
+              canCancel: false,
+              intent: "scan",
+            };
+
   const cancel = useCallback(() => {
     abortRef.current?.abort();
   }, []);
@@ -70,9 +107,6 @@ export function useScanViewModel(): ScanViewModel {
       const rfidKey = await session.getRfidKey(card.uid);
       const secret = await card.readSecret(rfidKey);
       const isEmpty = isEmptySecret(secret);
-      if (isEmpty) {
-        startDraft(card.uid, rfidKey);
-      }
       return { uid: card.uid, rfidKey, secret, isEmpty };
     } catch (e) {
       if (!abort.signal.aborted) {
@@ -92,8 +126,8 @@ export function useScanViewModel(): ScanViewModel {
     readerConnected,
     phase,
     error,
-    canSubmit,
     canCancel,
+    cta,
     cancel,
     submit,
   };

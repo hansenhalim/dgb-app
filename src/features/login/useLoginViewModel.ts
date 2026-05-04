@@ -6,14 +6,24 @@ import { LoginError, type RfidReaderStatus } from "@/domain/ports";
 
 export type LoginPhase = "idle" | "scanning" | "verifying";
 
+export type LoginCtaIntent = "submit" | "openReader";
+
+export type LoginCta = {
+  label: string;
+  enabled: boolean;
+  canCancel: boolean;
+  intent: LoginCtaIntent;
+};
+
 export type LoginViewModel = {
   pin: string;
   setPin: (next: string) => void;
+  busy: boolean;
   readerConnected: boolean;
   phase: LoginPhase;
   error: string | null;
-  canSubmit: boolean;
   canCancel: boolean;
+  cta: LoginCta;
   cancel: () => void;
   submit: () => Promise<Session | null>;
 };
@@ -43,8 +53,45 @@ export function useLoginViewModel(): LoginViewModel {
   }, []);
 
   const readerConnected = status.state === "connected";
-  const canSubmit =
-    readerConnected && pin.length === PIN_LENGTH && phase === "idle";
+  const pinReady = pin.length === PIN_LENGTH;
+  const busy = phase !== "idle";
+  const canSubmit = readerConnected && pinReady && phase === "idle";
+
+  const cta: LoginCta =
+    phase === "scanning"
+      ? {
+          label: "Memindai Kartu…",
+          enabled: false,
+          canCancel,
+          intent: "submit",
+        }
+      : phase === "verifying"
+        ? {
+            label: "Memverifikasi…",
+            enabled: false,
+            canCancel: false,
+            intent: "submit",
+          }
+        : !pinReady
+          ? {
+              label: "Masukkan PIN 6 Digit",
+              enabled: false,
+              canCancel: false,
+              intent: "submit",
+            }
+          : !readerConnected
+            ? {
+                label: "Pilih Reader",
+                enabled: true,
+                canCancel: false,
+                intent: "openReader",
+              }
+            : {
+                label: "Scan Kartu RFID",
+                enabled: true,
+                canCancel: false,
+                intent: "submit",
+              };
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
@@ -89,11 +136,12 @@ export function useLoginViewModel(): LoginViewModel {
   return {
     pin,
     setPin,
+    busy,
     readerConnected,
     phase,
     error,
-    canSubmit,
     canCancel,
+    cta,
     cancel,
     submit,
   };

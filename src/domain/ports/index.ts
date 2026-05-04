@@ -1,6 +1,11 @@
 export type { AuthGateway } from "./AuthGateway";
 export { LoginError } from "./AuthGateway";
 export type {
+  ExtractedId,
+  ExtractedIdType,
+  IdExtractor,
+} from "./IdExtractor";
+export type {
   DashboardSnapshot,
   SessionRepository,
 } from "./SessionRepository";

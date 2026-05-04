@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -16,97 +16,32 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppStatusBar } from "@/components/AppStatusBar";
-import {
-  clearDraft,
-  getDraft,
-  updateDraft,
-  type Keperluan,
-} from "@/features/visit/visitDraft";
 import { useTheme } from "@/theme/theme";
 import { fonts, radius, type Colors } from "@/theme/tokens";
 
-const KEPERLUAN_OPTIONS: Keperluan[] = [
-  "Bertamu",
-  "Antar Jemput",
-  "Pengantaran barang",
-  "Lainnya",
-];
-
-const formatPlate = (raw: string) =>
-  raw
-    .replace(/\s+/g, "")
-    .toUpperCase()
-    .replace(/([A-Z])(\d)/g, "$1 $2")
-    .replace(/(\d)([A-Z])/g, "$1 $2");
+import { TujuanAutocomplete } from "./TujuanAutocomplete";
+import {
+  KEPERLUAN_OPTIONS,
+  useGuestFormViewModel,
+} from "./useGuestFormViewModel";
 
 export default function GuestFormScreen() {
-  const draft = getDraft();
+  const { photoUri: rawPhotoUri } = useLocalSearchParams<{
+    uid: string;
+    rfidKey: string;
+    photoUri?: string;
+  }>();
   const { width } = useWindowDimensions();
   const isTablet = width >= 640;
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const [nik, setNik] = useState(draft?.nik ?? "");
-  const [nama, setNama] = useState(draft?.nama ?? "");
-  const [plat, setPlat] = useState(draft?.plat ?? "");
-  const handlePlatChange = useCallback(
-    (v: string) => setPlat(formatPlate(v)),
-    [],
-  );
-  const [tujuan, setTujuan] = useState(draft?.tujuan ?? "");
-  const [keperluan, setKeperluan] = useState<Keperluan | null>(
-    draft?.keperluan ?? null,
-  );
-  const [keperluanOther, setKeperluanOther] = useState(
-    draft?.keperluanOther ?? "",
-  );
-  const [saving, setSaving] = useState(false);
-
-  const keperluanComplete =
-    keperluan !== null &&
-    (keperluan !== "Lainnya" || keperluanOther.trim().length > 0);
-
-  const canSave =
-    !saving &&
-    nik.trim().length > 0 &&
-    nama.trim().length > 0 &&
-    tujuan.trim().length > 0 &&
-    keperluanComplete;
+  const vm = useGuestFormViewModel(rawPhotoUri);
 
   const onSave = useCallback(async () => {
-    if (!canSave || !keperluan) return;
-    setSaving(true);
-    updateDraft({
-      nik: nik.trim(),
-      nama: nama.trim(),
-      plat: plat.trim(),
-      tujuan: tujuan.trim(),
-      keperluan,
-      keperluanOther:
-        keperluan === "Lainnya" ? keperluanOther.trim() : undefined,
-    });
-    // TODO: submit to server once the register-visit endpoint is defined.
-    clearDraft();
-    router.dismissAll();
-  }, [canSave, keperluan, keperluanOther, nik, nama, plat, tujuan]);
-
-  if (!draft) {
-    return (
-      <SafeAreaView style={styles.screen} edges={["top", "left", "right", "bottom"]}>
-        <AppStatusBar />
-        <View style={styles.emptyBox}>
-          <Text style={styles.brandKey}>SESI TIDAK AKTIF</Text>
-          <Text style={styles.title}>Mulai pemindaian ulang</Text>
-          <Text style={styles.subtitle}>
-            Data kunjungan tidak ditemukan. Kembali ke beranda dan pindai kartu tamu lagi.
-          </Text>
-          <Pressable style={styles.cta} onPress={() => router.dismissAll()}>
-            <Text style={styles.ctaText}>Kembali ke Beranda</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
+    const ok = await vm.save();
+    if (ok) router.dismissAll();
+  }, [vm]);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
@@ -119,11 +54,11 @@ export default function GuestFormScreen() {
         bottomOffset={80}
       >
         <View style={[styles.layout, isTablet && styles.layoutTablet]}>
-          {draft.photoUri ? (
+          {vm.photoUri ? (
             <View style={[styles.column, isTablet && styles.columnLeft]}>
               <View style={styles.photoCard}>
                 <Image
-                  source={{ uri: draft.photoUri }}
+                  source={{ uri: vm.photoUri }}
                   style={styles.photo}
                   contentFit="cover"
                 />
@@ -141,26 +76,32 @@ export default function GuestFormScreen() {
             <View style={styles.field}>
               <Text style={styles.label}>NIK</Text>
               <TextInput
-                style={styles.input}
-                value={nik}
-                onChangeText={(t) => setNik(t.replace(/\D/g, "").slice(0, 16))}
+                style={[styles.input, vm.isProcessing && styles.inputDisabled]}
+                value={vm.nik}
+                onChangeText={vm.setNik}
                 keyboardType="number-pad"
                 maxLength={16}
                 autoCorrect={false}
-                placeholder="1234567890123456"
+                placeholder={
+                  vm.isProcessing ? "Memproses identitas…" : "1234567890123456"
+                }
                 placeholderTextColor={colors.inkDim}
+                editable={!vm.isProcessing}
               />
             </View>
 
             <View style={styles.field}>
               <Text style={styles.label}>Nama</Text>
               <TextInput
-                style={styles.input}
-                value={nama}
-                onChangeText={setNama}
+                style={[styles.input, vm.isProcessing && styles.inputDisabled]}
+                value={vm.nama}
+                onChangeText={vm.setNama}
                 autoCorrect={false}
-                placeholder="JOHN DOE"
+                placeholder={
+                  vm.isProcessing ? "Memproses identitas…" : "JOHN DOE"
+                }
                 placeholderTextColor={colors.inkDim}
+                editable={!vm.isProcessing}
               />
             </View>
 
@@ -168,8 +109,8 @@ export default function GuestFormScreen() {
               <Text style={styles.label}>No. Plat</Text>
               <TextInput
                 style={styles.input}
-                value={plat}
-                onChangeText={handlePlatChange}
+                value={vm.plat}
+                onChangeText={vm.setPlat}
                 keyboardType="visible-password"
                 autoCorrect={false}
                 placeholder="BE 1234 CD"
@@ -179,13 +120,9 @@ export default function GuestFormScreen() {
 
             <View style={styles.field}>
               <Text style={styles.label}>Tujuan</Text>
-              <TextInput
-                style={styles.input}
-                value={tujuan}
-                onChangeText={setTujuan}
-                autoCorrect={false}
-                placeholder="AA-1"
-                placeholderTextColor={colors.inkDim}
+              <TujuanAutocomplete
+                value={vm.tujuan}
+                onChange={vm.setTujuan}
               />
             </View>
 
@@ -193,7 +130,7 @@ export default function GuestFormScreen() {
               <Text style={styles.label}>Keperluan</Text>
               <View style={styles.radioGroup}>
                 {KEPERLUAN_OPTIONS.map((opt, idx) => {
-                  const selected = keperluan === opt;
+                  const selected = vm.keperluan === opt;
                   return (
                     <Pressable
                       key={opt}
@@ -202,7 +139,7 @@ export default function GuestFormScreen() {
                         idx > 0 && styles.radioRowDivider,
                         selected && styles.radioRowSelected,
                       ]}
-                      onPress={() => setKeperluan(opt)}
+                      onPress={() => vm.setKeperluan(opt)}
                       hitSlop={4}
                     >
                       <View style={[styles.radio, selected && styles.radioSelected]}>
@@ -216,11 +153,11 @@ export default function GuestFormScreen() {
                 })}
               </View>
 
-              {keperluan === "Lainnya" ? (
+              {vm.keperluan === "Lainnya" ? (
                 <TextInput
                   style={[styles.input, styles.otherInput]}
-                  value={keperluanOther}
-                  onChangeText={setKeperluanOther}
+                  value={vm.keperluanOther}
+                  onChangeText={vm.setKeperluanOther}
                   autoCorrect={false}
                   placeholder="Renang, Les, dll"
                   placeholderTextColor={colors.inkDim}
@@ -235,12 +172,12 @@ export default function GuestFormScreen() {
       <KeyboardStickyView offset={{ closed: 0, opened: 16 }}>
         <SafeAreaView style={styles.fabBar} edges={["bottom", "left", "right"]}>
           <Pressable
-            style={[styles.cta, !canSave && styles.ctaDisabled]}
-            disabled={!canSave}
+            style={[styles.cta, !vm.canSave && styles.ctaDisabled]}
+            disabled={!vm.canSave}
             onPress={onSave}
           >
-            <Text style={[styles.ctaText, !canSave && styles.ctaTextDisabled]}>
-              {saving ? "Menyimpan…" : "Simpan Kunjungan"}
+            <Text style={[styles.ctaText, !vm.canSave && styles.ctaTextDisabled]}>
+              {vm.saving ? "Menyimpan…" : "Simpan Kunjungan"}
             </Text>
           </Pressable>
         </SafeAreaView>
@@ -282,31 +219,12 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   columnRight: {
     flex: 1,
   },
-  brandKey: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    color: colors.inkMuted,
-    letterSpacing: 1.4,
-  },
-  title: {
-    fontFamily: fonts.sans,
-    fontSize: 28,
-    fontWeight: "600",
-    color: colors.ink,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.inkMuted,
-    lineHeight: 20,
-  },
   photoCard: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.rule,
     borderRadius: radius.base,
     overflow: "hidden",
-    maxWidth: 480,
     alignSelf: "center",
     width: "100%",
   },
@@ -354,6 +272,10 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     borderRadius: radius.base,
     paddingVertical: 14,
     paddingHorizontal: 14,
+  },
+  inputDisabled: {
+    backgroundColor: colors.rule,
+    color: colors.inkMuted,
   },
   otherInput: {
     marginTop: 8,
@@ -434,11 +356,5 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   ctaTextDisabled: {
     color: colors.inkMuted,
-  },
-  emptyBox: {
-    flex: 1,
-    padding: 16,
-    paddingTop: 48,
-    gap: 12,
   },
 });

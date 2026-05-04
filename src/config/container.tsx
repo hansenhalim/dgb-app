@@ -2,10 +2,12 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 
 import {
   ApiAuthGateway,
+  ApiIdExtractor,
   ApiSessionRepository,
 } from "@/data/api";
 import {
   MockAuthGateway,
+  MockIdExtractor,
   MockSessionRepository,
 } from "@/data/mock";
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/data/rfid";
 import type {
   AuthGateway,
+  IdExtractor,
   RfidReader,
   SessionRepository,
 } from "@/domain/ports";
@@ -25,6 +28,7 @@ export type Services = {
   auth: AuthGateway;
   session: SessionRepository;
   rfid: RfidReader;
+  idExtractor: IdExtractor;
 };
 
 function buildServices(
@@ -48,7 +52,11 @@ function buildServices(
         ? new SerialRfidReader()
         : new MockRfidReader();
 
-  return { auth, session, rfid };
+  const idExtractor: IdExtractor = useMock
+    ? new MockIdExtractor()
+    : new ApiIdExtractor();
+
+  return { auth, session, rfid, idExtractor };
 }
 
 const ServicesContext = createContext<Services | null>(null);

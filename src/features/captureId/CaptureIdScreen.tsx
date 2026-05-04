@@ -1,15 +1,17 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { updateDraft } from "@/features/visit/visitDraft";
 import { useTheme } from "@/theme/theme";
 import { type Colors, fonts, radius } from "@/theme/tokens";
 
 export default function CaptureIdScreen() {
+  const { uid, rfidKey } = useLocalSearchParams<{
+    uid: string;
+    rfidKey: string;
+  }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -23,20 +25,15 @@ export default function CaptureIdScreen() {
     try {
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.7 });
       if (photo?.uri) {
-        const rendered = await ImageManipulator.manipulate(photo.uri)
-          .rotate(90)
-          .renderAsync();
-        const saved = await rendered.saveAsync({
-          format: SaveFormat.JPEG,
-          compress: 0.9,
+        router.push({
+          pathname: "/guest-form",
+          params: { uid, rfidKey, photoUri: photo.uri },
         });
-        updateDraft({ photoUri: saved.uri });
-        router.push("/guest-form");
       }
     } finally {
       setBusy(false);
     }
-  }, [busy, cameraReady]);
+  }, [busy, cameraReady, uid, rfidKey]);
 
   if (!permission) {
     return <View style={styles.screen} />;

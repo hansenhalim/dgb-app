@@ -1,4 +1,4 @@
-import type { CardStock, Gate, VisitSummary } from "../entities";
+import type { CardStock, Destination, Gate, VisitSummary } from "../entities";
 
 export type DashboardSnapshot = {
   gate: Gate;
@@ -11,4 +11,5 @@ export interface SessionRepository {
   listGates(): Promise<Gate[]>;
   setGate(gateId: number): Promise<void>;
   getRfidKey(uid: string): Promise<string>;
+  listDestinations(): Promise<Destination[]>;
 }

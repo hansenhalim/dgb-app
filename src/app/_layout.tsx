@@ -5,6 +5,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ServicesProvider, useServices } from "@/config/container";
+import { DestinationsProvider } from "@/config/destinations";
 import { SessionProvider, useSession } from "@/config/session";
 import { ThemeProvider, useTheme } from "@/theme/theme";
 
@@ -53,14 +54,16 @@ export default function RootLayout() {
       <ThemeProvider>
         <ServicesProvider>
           <SessionProvider>
-            <SafeAreaProvider>
-              <ThemedShell>
-                <ReaderBootstrap />
-                <AuthGate>
-                  <Stack screenOptions={{ headerShown: false }} />
-                </AuthGate>
-              </ThemedShell>
-            </SafeAreaProvider>
+            <DestinationsProvider>
+              <SafeAreaProvider>
+                <ThemedShell>
+                  <ReaderBootstrap />
+                  <AuthGate>
+                    <Stack screenOptions={{ headerShown: false }} />
+                  </AuthGate>
+                </ThemedShell>
+              </SafeAreaProvider>
+            </DestinationsProvider>
           </SessionProvider>
         </ServicesProvider>
       </ThemeProvider>

@@ -1,5 +1,5 @@
 import { loadSession } from "@/data/auth/sessionStore";
-import type { Gate } from "@/domain/entities";
+import type { Destination, Gate } from "@/domain/entities";
 import type {
   DashboardSnapshot,
   SessionRepository,
@@ -14,6 +14,11 @@ type ApiGate = {
   name: string;
   current_quota: number;
   is_available: boolean;
+};
+
+type ApiDestination = {
+  name: string;
+  position: string;
 };
 
 function toGate(g: ApiGate): Gate {
@@ -49,5 +54,14 @@ export class ApiSessionRepository implements SessionRepository {
       { token: session?.token ?? null },
     );
     return res.rfid_key;
+  }
+
+  async listDestinations(): Promise<Destination[]> {
+    const session = await loadSession();
+    const res = await request<ApiEnvelope<ApiDestination[]>>(
+      "/api/destinations",
+      { token: session?.token ?? null },
+    );
+    return res.data.map((d) => ({ name: d.name, position: d.position }));
   }
 }

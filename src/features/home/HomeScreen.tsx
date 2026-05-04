@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -15,7 +15,8 @@ import {
   WarningTriangle,
 } from "@/components/icons";
 import { useSession } from "@/config/session";
-import { colors, fonts, radius } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { type Colors, fonts, radius } from "@/theme/tokens";
 
 import { GateSheet } from "./GateSheet";
 import { useHomeViewModel } from "./useHomeViewModel";
@@ -28,6 +29,8 @@ export default function HomeScreen() {
   const scan = useScanViewModel();
   const { session, logout } = useSession();
   const readerStatus = useReaderStatus();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const statusBarRef = useRef<AppStatusBarHandle>(null);
   const [gateSheetOpen, setGateSheetOpen] = useState(false);
 
@@ -207,7 +210,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,

@@ -1,11 +1,13 @@
 import Constants from "expo-constants";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useServices } from "@/config/container";
 import type { DiscoverOptions, RfidReaderStatus } from "@/domain/ports";
-import { colors, fonts } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { type Colors, fonts } from "@/theme/tokens";
 
+import { Moon, Sun } from "./icons";
 import { ReaderSheet } from "./ReaderSheet";
 
 const appVersion = Constants.expoConfig?.version ?? "";
@@ -26,6 +28,8 @@ export function useReaderStatus(): RfidReaderStatus {
 
 export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
   const { rfid } = useServices();
+  const { colors, scheme, toggle } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [status, setStatus] = useState<RfidReaderStatus>(rfid.getStatus());
   const [pairedId, setPairedId] = useState<string | null>(
     rfid.getPairedPeripheralId(),
@@ -83,12 +87,12 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
     <>
       <View style={styles.bar}>
         <Text style={styles.text}>v{appVersion}</Text>
-        <Pressable
-          style={styles.right}
-          onPress={() => setSheetOpen(true)}
-          hitSlop={8}
-        >
-          <View style={styles.chip}>
+        <View style={styles.right}>
+          <Pressable
+            style={styles.chip}
+            onPress={() => setSheetOpen(true)}
+            hitSlop={8}
+          >
             <View style={[styles.dot, !connected && styles.dotOff]} />
             <Text
               style={[
@@ -99,11 +103,25 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
             >
               READER
             </Text>
-          </View>
+          </Pressable>
           {connected && status.batteryPercent !== null ? (
             <Text style={styles.text}>{status.batteryPercent}%</Text>
           ) : null}
-        </Pressable>
+          <Pressable
+            onPress={toggle}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              scheme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
+          >
+            {scheme === "dark" ? (
+              <Sun size={14} color={colors.inkMuted} />
+            ) : (
+              <Moon size={14} color={colors.inkMuted} />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       <ReaderSheet
@@ -124,7 +142,7 @@ export const AppStatusBar = forwardRef<AppStatusBarHandle>((_props, ref) => {
 });
 AppStatusBar.displayName = "AppStatusBar";
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   bar: {
     flexDirection: "row",
     justifyContent: "space-between",

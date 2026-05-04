@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -12,13 +12,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppStatusBar, type AppStatusBarHandle } from "@/components/AppStatusBar";
 import { useSession } from "@/config/session";
-import { colors, fonts, radius } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { type Colors, fonts, radius } from "@/theme/tokens";
 
 import { useLoginViewModel } from "./useLoginViewModel";
 
 export default function LoginScreen() {
   const vm = useLoginViewModel();
   const { setSession } = useSession();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const statusBarRef = useRef<AppStatusBarHandle>(null);
 
   const onSubmit = useCallback(async () => {
@@ -108,7 +111,7 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,

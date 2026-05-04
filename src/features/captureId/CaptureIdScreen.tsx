@@ -1,18 +1,21 @@
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { router } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { updateDraft } from "@/features/visit/visitDraft";
-import { colors, fonts, radius } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { type Colors, fonts, radius } from "@/theme/tokens";
 
 export default function CaptureIdScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const onShutter = useCallback(async () => {
     if (busy || !cameraReady) return;
@@ -108,7 +111,7 @@ export default function CaptureIdScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: "#000",
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
     minWidth: 52,
   },
   backText: {
-    color: colors.surface,
+    color: "#ffffff",
     fontFamily: fonts.sans,
     fontSize: 14,
   },
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
   brandKeyLight: {
     fontFamily: fonts.mono,
     fontSize: 10,
-    color: colors.surface,
+    color: "#ffffff",
     letterSpacing: 1.4,
     opacity: 0.85,
   },
@@ -187,7 +190,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 14,
     fontWeight: "500",
-    color: colors.surface,
+    color: "#ffffff",
     letterSpacing: -0.1,
   },
   subtitle: {

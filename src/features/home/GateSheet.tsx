@@ -5,7 +5,7 @@ import {
   type ModalBottomSheetRef,
 } from "@expo/ui/jetpack-compose";
 import { fillMaxWidth } from "@expo/ui/jetpack-compose/modifiers";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,7 +15,8 @@ import {
 } from "react-native";
 
 import type { Gate } from "@/domain/entities";
-import { colors, fonts, radius } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { type Colors, fonts, radius } from "@/theme/tokens";
 
 export type GateSheetProps = {
   visible: boolean;
@@ -32,6 +33,8 @@ export function GateSheet({
   listGates,
   selectGate,
 }: GateSheetProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [gates, setGates] = useState<Gate[]>([]);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -146,7 +149,7 @@ export function GateSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   sheetHost: {
     position: "absolute",
     width: "100%",

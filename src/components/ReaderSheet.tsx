@@ -5,7 +5,7 @@ import {
   type ModalBottomSheetRef
 } from "@expo/ui/jetpack-compose";
 import { fillMaxWidth } from '@expo/ui/jetpack-compose/modifiers';
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -15,7 +15,8 @@ import {
 } from "react-native";
 
 import type { DiscoverOptions, RfidPeripheral } from "@/domain/ports";
-import { colors, fonts, radius } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { type Colors, fonts, radius } from "@/theme/tokens";
 
 export type ReaderSheetProps = {
   visible: boolean;
@@ -50,6 +51,8 @@ export function ReaderSheet({
   reconnectReader,
   forgetReader,
 }: ReaderSheetProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [mode, setMode] = useState<"paired" | "picker">(
     pairedReaderId ? "paired" : "picker",
   );
@@ -331,7 +334,7 @@ export function ReaderSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   sheetHost: {
     position: "absolute",
     width: "100%",

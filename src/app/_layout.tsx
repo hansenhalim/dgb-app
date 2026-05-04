@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ServicesProvider, useServices } from "@/config/container";
 import { SessionProvider, useSession } from "@/config/session";
+import { ThemeProvider, useTheme } from "@/theme/theme";
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { session, loading } = useSession();
@@ -36,20 +37,33 @@ function ReaderBootstrap() {
   return null;
 }
 
+function ThemedShell({ children }: { children: React.ReactNode }) {
+  const { scheme } = useTheme();
+  return (
+    <>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      {children}
+    </>
+  );
+}
+
 export default function RootLayout() {
   return (
     <KeyboardProvider>
-      <ServicesProvider>
-        <SessionProvider>
-          <SafeAreaProvider>
-            <StatusBar style="dark" />
-            <ReaderBootstrap />
-            <AuthGate>
-              <Stack screenOptions={{ headerShown: false }} />
-            </AuthGate>
-          </SafeAreaProvider>
-        </SessionProvider>
-      </ServicesProvider>
+      <ThemeProvider>
+        <ServicesProvider>
+          <SessionProvider>
+            <SafeAreaProvider>
+              <ThemedShell>
+                <ReaderBootstrap />
+                <AuthGate>
+                  <Stack screenOptions={{ headerShown: false }} />
+                </AuthGate>
+              </ThemedShell>
+            </SafeAreaProvider>
+          </SessionProvider>
+        </ServicesProvider>
+      </ThemeProvider>
     </KeyboardProvider>
   );
 }

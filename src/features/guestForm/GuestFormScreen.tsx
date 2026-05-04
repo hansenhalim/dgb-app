@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -22,7 +22,8 @@ import {
   updateDraft,
   type Keperluan,
 } from "@/features/visit/visitDraft";
-import { colors, fonts, radius } from "@/theme/tokens";
+import { useTheme } from "@/theme/theme";
+import { fonts, radius, type Colors } from "@/theme/tokens";
 
 const KEPERLUAN_OPTIONS: Keperluan[] = [
   "Bertamu",
@@ -42,6 +43,8 @@ export default function GuestFormScreen() {
   const draft = getDraft();
   const { width } = useWindowDimensions();
   const isTablet = width >= 640;
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [nik, setNik] = useState(draft?.nik ?? "");
   const [nama, setNama] = useState(draft?.nama ?? "");
@@ -84,7 +87,7 @@ export default function GuestFormScreen() {
     });
     // TODO: submit to server once the register-visit endpoint is defined.
     clearDraft();
-    router.replace("/");
+    router.dismissAll();
   }, [canSave, keperluan, keperluanOther, nik, nama, plat, tujuan]);
 
   if (!draft) {
@@ -97,7 +100,7 @@ export default function GuestFormScreen() {
           <Text style={styles.subtitle}>
             Data kunjungan tidak ditemukan. Kembali ke beranda dan pindai kartu tamu lagi.
           </Text>
-          <Pressable style={styles.cta} onPress={() => router.replace("/")}>
+          <Pressable style={styles.cta} onPress={() => router.dismissAll()}>
             <Text style={styles.ctaText}>Kembali ke Beranda</Text>
           </Pressable>
         </View>
@@ -113,6 +116,7 @@ export default function GuestFormScreen() {
         style={styles.flex}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={80}
       >
         <View style={[styles.layout, isTablet && styles.layoutTablet]}>
           {draft.photoUri ? (
@@ -245,7 +249,7 @@ export default function GuestFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -302,7 +306,7 @@ const styles = StyleSheet.create({
     borderColor: colors.rule,
     borderRadius: radius.base,
     overflow: "hidden",
-    maxWidth: 320,
+    maxWidth: 480,
     alignSelf: "center",
     width: "100%",
   },
